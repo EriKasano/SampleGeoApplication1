@@ -13,6 +13,9 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import butterknife.BindView;
+import butterknife.ButterKnife;
+import butterknife.OnClick;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.location.places.GeoDataClient;
@@ -39,11 +42,13 @@ public class ContentMapsFragment extends Fragment
     private GeoDataClient geoDataClient;
     private PlaceDetectionClient placeDetectionClient;
     private FusedLocationProviderClient fusedLocationProviderClient;
-    private MapView mapView;
+    @BindView(R.id.map_view)
+    MapView mapView;
     private GoogleMap map;
     private SingleFocusedMarker marker;
 
-    private FloatingActionButton selectCurLocButton;
+    @BindView(R.id.select_current_location)
+    FloatingActionButton selectCurLocButton;
 
     private static final int PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION = 1;
     private boolean mLocationPermissionGranted;
@@ -77,7 +82,7 @@ public class ContentMapsFragment extends Fragment
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         final View content = inflater.inflate(R.layout.fragment_content_maps, container, false);
-        mapView = content.findViewById(R.id.map_view);
+        ButterKnife.bind(this, content);
         mapView.onCreate(savedInstanceState);
         mapView.getMapAsync(this);
 
@@ -90,8 +95,6 @@ public class ContentMapsFragment extends Fragment
         // Construct a FusedLocationProviderClient.
         fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(getActivity());
 
-        //Bind Views
-        selectCurLocButton = content.findViewById(R.id.select_current_location);
         return content;
     }
 
@@ -175,16 +178,12 @@ public class ContentMapsFragment extends Fragment
                 marker.setTitle("lat: " + latLng.latitude + ", lng: " + latLng.longitude);
             }
         });
-        selectCurLocButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                getDeviceLocation();
-            }
-        });
         getLocationPermission();
     }
 
-    private void getDeviceLocation() {
+    @SuppressWarnings("unused")
+    @OnClick(R.id.select_current_location)
+    void getDeviceLocation() {
     /*
      * Get the best and most recent location of the device, which may be null in rare
      * cases when a location is not available.
@@ -195,7 +194,7 @@ public class ContentMapsFragment extends Fragment
                 locationResult.addOnCompleteListener(getActivity(), new OnCompleteListener<Location>() {
                     @Override
                     public void onComplete(@NonNull Task<Location> task) {
-                        if (task.isSuccessful()) {
+                        if (task.isSuccessful() && task.getResult() != null) {
                             // Set the map's camera position to the current location of the device.
                             mLastKnownLocation = task.getResult();
                             final LatLng latLng = new LatLng(mLastKnownLocation.getLatitude(),

@@ -14,6 +14,8 @@ import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.MenuItem;
+import butterknife.BindView;
+import butterknife.ButterKnife;
 import com.sunnymoon.samplegeoapplication1.fragments.ContentMapsFragment;
 import com.sunnymoon.samplegeoapplication1.fragments.ContentSettingsFragment;
 
@@ -25,31 +27,29 @@ public class MapsActivity extends AppCompatActivity
     final public static String BUNDLE_LATITUDE = "Bundle key latitude";
     final public static String BUNDLE_LONGITUDE = "Bundle key longitude";
 
-    private DrawerLayout drawer;
+    @BindView(R.id.drawer_layout)
+    DrawerLayout drawer;
+    @BindView(R.id.toolbar)
+    Toolbar toolbar;
+    @BindView(R.id.nav_view)
+    NavigationView nav;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_maps);
-        final Toolbar toolbar = findViewById(R.id.toolbar);
+        ButterKnife.bind(this);
+
         setSupportActionBar(toolbar);
 
         //Add a NavigationDrawer.
-        drawer = findViewById(R.id.drawer_layout);
         final ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
                 this, drawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
         drawer.addDrawerListener(toggle);
-        final NavigationView nav = findViewById(R.id.nav_view);
         nav.setNavigationItemSelectedListener(this);
 
         toggle.syncState();
         onNavigationItemSelected(nav.getMenu().findItem(R.id.nav_maps));
-    }
-
-    @Override
-    protected void onPostCreate(@Nullable Bundle savedInstanceState) {
-        super.onPostCreate(savedInstanceState);
-
     }
 
     @Override
