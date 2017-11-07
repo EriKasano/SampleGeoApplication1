@@ -2,7 +2,6 @@ package com.sunnymoon.samplegeoapplication1;
 
 import android.content.Intent;
 import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
 import android.os.Bundle;
 
 import android.support.design.widget.NavigationView;
@@ -59,17 +58,17 @@ public class MapsActivity extends AppCompatActivity
             case R.id.nav_maps: {
                 final Intent data = getIntent();
                 if(data.getBooleanExtra(BUNDLE_LOCATION_IS_SET, false)){
-                    fragment = ContentMapsFragment.newInstance(
+                    fragment = ContentMapsFragment.getInstance(
                             data.getDoubleExtra(BUNDLE_LATITUDE,0),
                             data.getDoubleExtra(BUNDLE_LONGITUDE,0)
                     );
                 }else {
-                    fragment = ContentMapsFragment.newInstance();
+                    fragment = ContentMapsFragment.getInstance();
                 }
                 break;
             }
             case R.id.nav_setting: {
-                fragment = ContentSettingsFragment.newInstance();
+                fragment = ContentSettingsFragment.getInstance();
                 break;
             }
         }

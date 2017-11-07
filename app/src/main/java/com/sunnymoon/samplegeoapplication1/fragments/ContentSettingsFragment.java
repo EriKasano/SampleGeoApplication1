@@ -20,13 +20,17 @@ import com.sunnymoon.samplegeoapplication1.sync.LocationJobService;
  */
 public class ContentSettingsFragment extends PreferenceFragmentCompat
         implements SharedPreferences.OnSharedPreferenceChangeListener {
+
+    private static ContentSettingsFragment instance;
+
     public ContentSettingsFragment() {
         // Required empty public constructor
     }
 
-    public static ContentSettingsFragment newInstance() {
-        final ContentSettingsFragment fragment = new ContentSettingsFragment();
-        return fragment;
+    public static ContentSettingsFragment getInstance() {
+        if(instance == null)
+            instance = new ContentSettingsFragment();
+        return instance;
     }
 
     @Override

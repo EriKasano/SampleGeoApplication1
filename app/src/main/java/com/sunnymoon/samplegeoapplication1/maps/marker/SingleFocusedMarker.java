@@ -18,29 +18,55 @@ import com.google.android.gms.maps.model.MarkerOptions;
  */
 public class SingleFocusedMarker {
     //The map that this single-focused-marker is on.
-    final private GoogleMap map;
+    private GoogleMap map;
     //The current marker that this single-focused-marker is wrapping.
     private Marker marker;
 
-    private OnMoveEndedListener onMoveEndedListener;
+    private OnBindListener onBindListener;
 
-    public interface OnMoveEndedListener{
-        void onMoveEnded(int reason);
+    //Since binding a GoogleMap happens before substituting a LatLng for
+    //the marker's location, we have to preserve a procedure so that
+    //concatenating the map and location at once.
+    public interface OnBindListener {
+        void onBind(GoogleMap map1);
     }
 
-    public SingleFocusedMarker(GoogleMap map){
-        this.map = map;
+    public OnBindListener getOnBindListener() {
+        return onBindListener;
     }
 
-    public OnMoveEndedListener getOnMoveEndedListener() {
-        return onMoveEndedListener;
+    public void setOnBindListener(OnBindListener onBindListener) {
+        this.onBindListener = onBindListener;
     }
 
-    public void setOnMoveEndedListener(OnMoveEndedListener onMoveEndedListener) {
-        this.onMoveEndedListener = onMoveEndedListener;
+    public void bindMap(GoogleMap map){
+        if(this.map == null) {
+            this.map = map;
+
+            //If there is a binging already set, then apply it to the map.
+            if(onBindListener != null){
+                onBindListener.onBind(map);
+            }
+        }
+    }
+
+    public GoogleMap getMap() {
+        return map;
+    }
+
+    public LatLng getLatLng(){
+        return marker.getPosition();
+    }
+
+    public String getTitle(){
+        return marker.getTitle();
     }
 
     public void moveTo(LatLng latLng){
+        moveTo(latLng, true);
+    }
+
+    public void moveTo(final LatLng latLng, final boolean animate){
         if(marker != null) {
             final Marker preMarker = marker;
             final ObjectAnimator alphaAnimation = ObjectAnimator.ofFloat(preMarker, "alpha", 1,0);
@@ -56,7 +82,10 @@ public class SingleFocusedMarker {
         //Create a new marker.
         final MarkerOptions options = new MarkerOptions().position(latLng);
         marker = map.addMarker(options);
-        graduallyMoveCamera(latLng);
+        if(animate)
+            graduallyMoveCamera(latLng);
+        else
+            map.moveCamera(CameraUpdateFactory.newLatLng(latLng));
         //Apply a fading animation.
         final ObjectAnimator alphaAnimation = ObjectAnimator.ofFloat(marker, "alpha", 0,1);
         alphaAnimation.setDuration(1000);
@@ -81,17 +110,6 @@ public class SingleFocusedMarker {
             valueAnimator.setFloatValues(0, 1);
             valueAnimator.setDuration(1000);
             valueAnimator.start();
-
-            final long margin = 50;
-            if(onMoveEndedListener != null){
-                new Handler().postDelayed(new Runnable() {
-                    @Override
-                    public void run() {
-                        onMoveEndedListener
-                                .onMoveEnded(GoogleMap.OnCameraMoveStartedListener.REASON_DEVELOPER_ANIMATION);
-                    }
-                }, valueAnimator.getDuration() + margin);
-            }
         }else{
             map.moveCamera(CameraUpdateFactory.newLatLng(to));
         }
@@ -102,15 +120,15 @@ public class SingleFocusedMarker {
     }
 
     class LatLngInterpolator {
-        public LatLng interpolate(float fraction, LatLng a, LatLng b) {
-            double lat = (b.latitude - a.latitude) * fraction + a.latitude;
-            double lngDelta = b.longitude - a.longitude;
+        public LatLng interpolate(float fraction, LatLng from, LatLng to) {
+            double lat = (to.latitude - from.latitude) * fraction + from.latitude;
+            double lngDelta = to.longitude - from.longitude;
 
             // Take the shortest path across the 180th meridian.
             if (Math.abs(lngDelta) > 180) {
                 lngDelta -= Math.signum(lngDelta) * 360;
             }
-            double lng = lngDelta * fraction + a.longitude;
+            double lng = lngDelta * fraction + from.longitude;
             return new LatLng(lat, lng);
         }
     }

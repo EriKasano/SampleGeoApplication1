@@ -4,6 +4,7 @@ import android.content.pm.PackageManager;
 import android.location.Location;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.ActivityCompat;
 
@@ -36,8 +37,8 @@ public class ContentMapsFragment extends Fragment
         implements OnMapReadyCallback {
     private static final String TAG = "ContentMapsFragment";
 
-    public static final String ARGS_LATITUDE = "latitude";
-    public static final String Args_LONGITUDE = "longitude";
+    public static final String KEY_LATITUDE = "latitude";
+    public static final String KEY_LONGITUDE = "longitude";
 
     private GeoDataClient geoDataClient;
     private PlaceDetectionClient placeDetectionClient;
@@ -55,22 +56,27 @@ public class ContentMapsFragment extends Fragment
 
     private Location mLastKnownLocation;
 
+    private static ContentMapsFragment instance;
+
     public ContentMapsFragment() {
         // Required empty public constructor
     }
-    public static ContentMapsFragment newInstance() {
-        final ContentMapsFragment fragment = new ContentMapsFragment();
-        return fragment;
+    public static ContentMapsFragment getInstance() {
+        if(instance == null)
+            instance = new ContentMapsFragment();
+        return instance;
     }
 
-    public static ContentMapsFragment newInstance(double lat, double lng){
-        final Bundle args = new Bundle();
-        args.putDouble(ARGS_LATITUDE, lat);
-        args.putDouble(Args_LONGITUDE, lng);
+    public static ContentMapsFragment getInstance(double lat, double lng){
+        if(instance == null)
+            instance = new ContentMapsFragment();
 
-        final ContentMapsFragment fragment = new ContentMapsFragment();
-        fragment.setArguments(args);
-        return fragment;
+        final Bundle args = new Bundle();
+        args.putDouble(KEY_LATITUDE, lat);
+        args.putDouble(KEY_LONGITUDE, lng);
+
+        instance.setArguments(args);
+        return instance;
     }
 
     @Override
@@ -146,28 +152,8 @@ public class ContentMapsFragment extends Fragment
         UiSettings settings = map.getUiSettings();
         settings.setMapToolbarEnabled(false);
 
-        map.setOnCameraMoveStartedListener(new GoogleMap.OnCameraMoveStartedListener() {
-            @Override
-            public void onCameraMoveStarted(int reason) {
-                if(reason != REASON_DEVELOPER_ANIMATION)
-                    selectCurLocButton.setColorFilter(null);
-            }
-        });
-
-        // Add a marker and move the camera.
-        final Bundle args = getArguments();
-        marker = new SingleFocusedMarker(map);
-        if(args != null) {
-            final LatLng sydney = new LatLng(
-                    args.getDouble(ARGS_LATITUDE),
-                    args.getDouble(Args_LONGITUDE));
-            marker.moveTo(sydney);
-            marker.setTitle("You'are here.");
-        }else {
-            final LatLng sydney = new LatLng(-34, 151);
-            marker.moveTo(sydney);
-            marker.setTitle("Marker in Sydney");
-        }
+        //Bind the map to the SingleFocusedMarker
+        marker.bindMap(map);
 
         // Add a listener so that marker will move when the map is clicked.
         map.setOnMapClickListener(new GoogleMap.OnMapClickListener() {
@@ -258,16 +244,49 @@ public class ContentMapsFragment extends Fragment
     }
 
     @Override
-    public void onSaveInstanceState(Bundle outState) {
-        super.onSaveInstanceState(outState);
-        if(mapView != null)
-            mapView.onSaveInstanceState(outState);
-    }
-
-    @Override
     public void onLowMemory() {
         super.onLowMemory();
         if(mapView != null)
             mapView.onLowMemory();
+    }
+
+    @Override
+    public void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        if(mapView != null)
+            mapView.onSaveInstanceState(outState);
+        outState.putParcelable("LatLng", marker.getLatLng());
+        outState.putString("Title", marker.getTitle());
+    }
+
+    @Override
+    public void onActivityCreated(final @Nullable Bundle savedInstanceState) {
+        super.onActivityCreated(savedInstanceState);
+
+        // Add a marker and move the camera.
+        final Bundle args = getArguments();
+
+        marker = new SingleFocusedMarker();
+        marker.setOnBindListener(new SingleFocusedMarker.OnBindListener() {
+            @Override
+            public void onBind(GoogleMap map1) {
+                if(savedInstanceState != null) {
+                    marker.moveTo((LatLng)savedInstanceState.getParcelable("LatLng"),false);
+                    marker.setTitle(savedInstanceState.getString("Title"));
+                }
+                else if(args != null) {
+                    final LatLng sydney = new LatLng(
+                            args.getDouble(KEY_LATITUDE),
+                            args.getDouble(KEY_LONGITUDE));
+                    marker.moveTo(sydney, false);
+                    marker.setTitle("You'are here.");
+                }else {
+                    final LatLng sydney = new LatLng(-34, 151);
+                    marker.moveTo(sydney,false);
+                    marker.setTitle("Marker in Sydney");
+                }
+            }
+        });
+
     }
 }
