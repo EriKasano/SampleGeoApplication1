@@ -22,6 +22,8 @@ public class MapsActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener {
     final private static String TAG = "MapsActivity";
 
+    final private static String FRAGMENT_MANAGER_KEY = "Current fragment";
+
     final public static String BUNDLE_LOCATION_IS_SET = "Bundle key has location is set";
     final public static String BUNDLE_LATITUDE = "Bundle key latitude";
     final public static String BUNDLE_LONGITUDE = "Bundle key longitude";
@@ -46,9 +48,24 @@ public class MapsActivity extends AppCompatActivity
                 this, drawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
         drawer.addDrawerListener(toggle);
         nav.setNavigationItemSelectedListener(this);
-
         toggle.syncState();
-        onNavigationItemSelected(nav.getMenu().findItem(R.id.nav_maps));
+
+        //Restore or initialize a fragment.
+        final Fragment fragment;
+        if (savedInstanceState != null) {
+            fragment = getSupportFragmentManager().getFragment(savedInstanceState, FRAGMENT_MANAGER_KEY);
+        }else{
+            final Intent data = getIntent();
+            if(data.getBooleanExtra(BUNDLE_LOCATION_IS_SET, false)){
+                fragment = ContentMapsFragment.getInstance(
+                        data.getDoubleExtra(BUNDLE_LATITUDE,0),
+                        data.getDoubleExtra(BUNDLE_LONGITUDE,0)
+                );
+            }else {
+                fragment = ContentMapsFragment.getInstance();
+            }
+        }
+        replaceFragmentBy(fragment);
     }
 
     @Override
@@ -56,15 +73,7 @@ public class MapsActivity extends AppCompatActivity
         Fragment fragment = null;
         switch (item.getItemId()) {
             case R.id.nav_maps: {
-                final Intent data = getIntent();
-                if(data.getBooleanExtra(BUNDLE_LOCATION_IS_SET, false)){
-                    fragment = ContentMapsFragment.getInstance(
-                            data.getDoubleExtra(BUNDLE_LATITUDE,0),
-                            data.getDoubleExtra(BUNDLE_LONGITUDE,0)
-                    );
-                }else {
-                    fragment = ContentMapsFragment.getInstance();
-                }
+                fragment = ContentMapsFragment.getInstance();
                 break;
             }
             case R.id.nav_setting: {
@@ -74,13 +83,24 @@ public class MapsActivity extends AppCompatActivity
         }
 
         //Replace the fragment
-        if (fragment != null) {
-            final FragmentTransaction ft = getSupportFragmentManager().beginTransaction();
-            ft.replace(R.id.content_frame, fragment);
-            ft.commit();
-        }
+        if (fragment != null)
+            replaceFragmentBy(fragment);
 
         drawer.closeDrawer(GravityCompat.START);
         return true;
+    }
+
+    private void replaceFragmentBy(@NonNull Fragment f){
+        getSupportFragmentManager()
+                .beginTransaction()
+                .replace(R.id.content_frame, f, FRAGMENT_MANAGER_KEY)
+                .commit();
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        final Fragment fragment = getSupportFragmentManager().findFragmentByTag(FRAGMENT_MANAGER_KEY);
+        getSupportFragmentManager().putFragment(outState, FRAGMENT_MANAGER_KEY, fragment);
     }
 }

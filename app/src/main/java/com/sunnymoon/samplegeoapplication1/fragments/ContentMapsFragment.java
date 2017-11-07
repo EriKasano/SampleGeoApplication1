@@ -1,5 +1,6 @@
 package com.sunnymoon.samplegeoapplication1.fragments;
 
+import android.content.Context;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.os.Bundle;
@@ -234,6 +235,7 @@ public class ContentMapsFragment extends Fragment
         super.onPause();
         if(mapView != null)
             mapView.onPause();
+        marker.unbind();
     }
 
     @Override
@@ -253,10 +255,10 @@ public class ContentMapsFragment extends Fragment
     @Override
     public void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
-        if(mapView != null)
-            mapView.onSaveInstanceState(outState);
         outState.putParcelable("LatLng", marker.getLatLng());
         outState.putString("Title", marker.getTitle());
+        if(mapView != null)
+            mapView.onSaveInstanceState(outState);
     }
 
     @Override
@@ -264,29 +266,30 @@ public class ContentMapsFragment extends Fragment
         super.onActivityCreated(savedInstanceState);
 
         // Add a marker and move the camera.
-        final Bundle args = getArguments();
-
-        marker = new SingleFocusedMarker();
-        marker.setOnBindListener(new SingleFocusedMarker.OnBindListener() {
-            @Override
-            public void onBind(GoogleMap map1) {
-                if(savedInstanceState != null) {
-                    marker.moveTo((LatLng)savedInstanceState.getParcelable("LatLng"),false);
-                    marker.setTitle(savedInstanceState.getString("Title"));
+        if(marker == null) {
+            final Bundle args = getArguments();
+            marker = new SingleFocusedMarker();
+            marker.setOnBindListener(new SingleFocusedMarker.OnBindListener() {
+                @Override
+                public void onBind(GoogleMap map1) {
+                    if(marker.hasSavedData()){
+                        marker.restore();
+                    } else if (savedInstanceState != null) {
+                        marker.moveTo((LatLng) savedInstanceState.getParcelable("LatLng"), false);
+                        marker.setTitle(savedInstanceState.getString("Title"));
+                    } else if (args != null) {
+                        final LatLng sydney = new LatLng(
+                                args.getDouble(KEY_LATITUDE),
+                                args.getDouble(KEY_LONGITUDE));
+                        marker.moveTo(sydney, false);
+                        marker.setTitle("You'are here.");
+                    } else {
+                        final LatLng sydney = new LatLng(-34, 151);
+                        marker.moveTo(sydney, false);
+                        marker.setTitle("Marker in Sydney");
+                    }
                 }
-                else if(args != null) {
-                    final LatLng sydney = new LatLng(
-                            args.getDouble(KEY_LATITUDE),
-                            args.getDouble(KEY_LONGITUDE));
-                    marker.moveTo(sydney, false);
-                    marker.setTitle("You'are here.");
-                }else {
-                    final LatLng sydney = new LatLng(-34, 151);
-                    marker.moveTo(sydney,false);
-                    marker.setTitle("Marker in Sydney");
-                }
-            }
-        });
-
+            });
+        }
     }
 }

@@ -50,6 +50,21 @@ public class SingleFocusedMarker {
         }
     }
 
+    public void unbind(){
+        map = null;
+    }
+
+    public boolean hasSavedData(){
+        return marker != null;
+    }
+
+    public void restore(){
+        final LatLng latLng = marker.getPosition();
+        final String title = marker.getTitle();
+        moveTo(latLng, false);
+        setTitle(title);
+    }
+
     public GoogleMap getMap() {
         return map;
     }
